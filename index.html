@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AetherShare — VC Locker</title>
+<!-- Bootstrap 5 CSS CDN -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+  :root {
+    --primary-red: #dc3545;
+    --dark-red: #a71d2a;
+    --light-pink: #fff5f5;
+    --border-pink: #fed7d7;
+  }
+
+  body {
+    background-color: #fafbfc;
+    color: #2d3748;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  /* Custom Red Header Banner */
+  .app-header {
+    background: linear-gradient(135deg, var(--dark-red), var(--primary-red));
+    color: white;
+    padding: 2rem 1rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.15);
+  }
+
+  /* Card and Container Styling */
+  .custom-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid var(--border-pink);
+    box-shadow: 0 4px 6px -1px rgba(220, 53, 69, 0.05), 0 2px 4px -1px rgba(220, 53, 69, 0.03);
+    padding: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  /* Navigation styling */
+  nav button {
+    background-color: white;
+    color: var(--dark-red);
+    border: 1px solid var(--border-pink);
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+  }
+
+  nav button:hover {
+    background-color: var(--light-pink);
+    border-color: var(--primary-red);
+    color: var(--dark-red);
+  }
+
+  nav button.active-nav {
+    background-color: var(--primary-red) !important;
+    color: white !important;
+    border-color: var(--primary-red);
+    box-shadow: 0 2px 6px rgba(220, 53, 69, 0.3);
+  }
+
+  /* Table styling */
+  .table-custom {
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .table-custom thead {
+    background-color: var(--light-pink);
+    color: var(--dark-red);
+    border-bottom: 2px solid var(--border-pink);
+  }
+
+  /* Buttons */
+  .btn-danger {
+    background-color: var(--primary-red);
+    border-color: var(--primary-red);
+  }
+
+  .btn-danger:hover {
+    background-color: var(--dark-red);
+    border-color: var(--dark-red);
+  }
+
+  .btn-outline-danger {
+    color: var(--primary-red);
+    border-color: var(--primary-red);
+  }
+
+  .btn-outline-danger:hover {
+    background-color: var(--primary-red);
+    color: white;
+  }
+
+  /* Form controls */
+  .form-control:focus, .form-select:focus {
+    border-color: var(--primary-red);
+    box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+  }
+
+  #share-preview-img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  canvas {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin-top: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+</style>
+</head>
+<body>
+
+<!-- Header Banner -->
+<div class="app-header text-center">
+  <div class="container">
+    <h1 class="display-5 fw-bold mb-1">AetherShare</h1>
+    <p class="lead mb-0 opacity-75">Visual cryptography document storage (demo)</p>
+  </div>
+</div>
+
+<div class="container">
+  <!-- Navigation bar -->
+  <nav class="d-flex flex-wrap justify-content-center gap-2 mb-4">
+    <button data-page="upload" class="active-nav">Upload</button>
+    <button data-page="documents">My Documents</button>
+    <button data-page="viewer">Viewer</button>
+    <button data-page="cloud">Cloud Status</button>
+  </nav>
+
+  <!-- Upload Section -->
+  <section id="page-upload" class="custom-card">
+    <h2 class="h4 fw-bold text-danger mb-3">Upload a document</h2>
+    <p class="text-muted">PDF (up to 30 pages), PNG or JPG.</p>
+    <div class="mb-3">
+      <input type="file" id="file" class="form-control" accept=".pdf,.png,.jpg,.jpeg">
+    </div>
+    <div class="mb-3">
+      <label for="scheme" class="form-label fw-semibold">Shares needed to open (k of n):</label>
+      <select id="scheme" class="form-select w-auto">
+        <option value="2-2">2 of 2</option>
+        <option value="2-3" selected>2 of 3</option>
+        <option value="2-4">2 of 4</option>
+        <option value="3-3">3 of 3</option>
+      </select>
+    </div>
+    <div class="mb-3">
+      <label for="mode" class="form-label fw-semibold">Output:</label>
+      <select id="mode" class="form-select w-auto">
+        <option value="color" selected>Color (best for photos and designs)</option>
+        <option value="bw">Black and white (best for text)</option>
+      </select>
+    </div>
+    <div class="mb-3">
+      <label for="quality" class="form-label fw-semibold">Quality:</label>
+      <select id="quality" class="form-select w-auto">
+        <option value="standard" selected>Standard (faster, smaller files)</option>
+        <option value="high">High (sharper, much larger files)</option>
+      </select>
+    </div>
+    <button id="upload-btn" class="btn btn-danger px-4">Split and store shares</button>
+    <p id="upload-message" class="mt-3 fw-medium text-danger"></p>
+  </section>
+
+  <!-- My Documents Section -->
+  <section id="page-documents" class="custom-card" hidden>
+    <h2 class="h4 fw-bold text-danger mb-3">My Documents</h2>
+    <p id="documents-message" class="text-danger" role="alert" hidden></p>
+    <p id="documents-empty" class="text-muted" hidden>No documents yet.</p>
+    <div class="table-responsive">
+      <table class="table table-hover table-custom align-middle" id="documents-table" hidden>
+        <thead><tr><th>File</th><th>Scheme</th><th>Output</th><th>Pages</th><th>Created (UTC)</th><th>Actions</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Viewer Section -->
+  <section id="page-viewer" class="custom-card" hidden>
+    <h2 class="h4 fw-bold text-danger mb-3">Viewer</h2>
+    <p id="viewer-empty" class="text-muted">Open a document from My Documents first.</p>
+    <div id="viewer-body" hidden>
+      <p class="fs-5 mb-2"><strong id="viewer-title"></strong> &mdash; <span id="viewer-scheme" class="badge bg-light text-danger border border-danger"></span></p>
+      <p class="text-muted small">Tick the shares you hold, then overlay them.</p>
+      
+      <div class="table-responsive mb-3">
+        <table class="table table-hover table-custom align-middle" id="share-table">
+          <thead><tr><th>Select</th><th>Share</th><th>Stored in</th><th>Status</th><th>Raw share</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <button id="prev-btn" class="btn btn-outline-danger">Previous page</button>
+        <span id="page-label" class="fw-semibold px-2"></span>
+        <button id="next-btn" class="btn btn-outline-danger">Next page</button>
+        <button id="overlay-btn" class="btn btn-danger px-4 ms-md-3">Overlay selected shares</button>
+      </div>
+      <p id="viewer-message" class="fw-medium text-danger"></p>
+      
+      <div id="share-preview" class="card bg-light p-3 my-3 border-danger-subtle" hidden>
+        <p id="share-preview-label" class="fw-semibold text-secondary small mb-2"></p>
+        <div style="width:100%;max-height:250px;overflow:auto;border:1px solid #dee2e6; background:white; border-radius:6px; padding:10px;">
+          <img id="share-preview-img" alt="Raw share">
+        </div>
+      </div>
+      
+      <div>
+        <canvas id="result"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- Cloud Status Section -->
+  <section id="page-cloud" class="custom-card" hidden>
+    <h2 class="h4 fw-bold text-danger mb-3">Cloud Status</h2>
+    <p class="text-muted">These nodes are folders on this computer standing in for real cloud buckets. Use the button to simulate an outage.</p>
+    <div class="table-responsive">
+      <table class="table table-hover table-custom align-middle" id="cloud-table">
+        <thead><tr><th>Node</th><th>Status</th><th>Share files stored</th><th>Action</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<!-- Bootstrap JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+let currentDoc = null;   // full document details, set by loadViewer
+let currentPage = 1;
+let overlayShown = false;
+
+function $(id) { return document.getElementById(id); }
+
+function showPage(name) {
+  for (const section of document.querySelectorAll("section")) {
+    section.hidden = section.id !== "page-" + name;
+  }
+  for (const button of document.querySelectorAll("nav button")) {
+    if (button.dataset.page === name) {
+      button.classList.add("active-nav");
+    } else {
+      button.classList.remove("active-nav");
+    }
+  }
+  if (name === "documents") loadDocuments();
+  if (name === "cloud") loadNodes();
+  if (name === "viewer" && currentDoc) loadViewer(currentDoc.id);
+}
+
+for (const button of document.querySelectorAll("nav button")) {
+  button.addEventListener("click", () => showPage(button.dataset.page));
+}
+
+async function api(url, options) {
+  const response = await fetch(url, options);
+  const type = response.headers.get("content-type") || "";
+  const body = type.includes("json") ? await response.json() : null;
+  if (!response.ok) throw new Error(body && body.error ? body.error : "Request failed (" + response.status + ")");
+  return body;
+}
+
+// ---- Upload ----
+
+$("upload-btn").addEventListener("click", async () => {
+  const message = $("upload-message");
+  const file = $("file").files[0];
+  if (!file) { message.textContent = "Choose a file first."; return; }
+  const form = new FormData();
+  form.append("file", file);
+  form.append("scheme", $("scheme").value);
+  form.append("mode", $("mode").value);
+  form.append("quality", $("quality").value);
+  message.textContent = "Splitting. A long PDF can take a minute or more...";
+  $("upload-btn").disabled = true;
+  try {
+    const result = await api("/api/documents", { method: "POST", body: form });
+    currentDoc = { id: result.id };
+    message.textContent = "Done. Shares were stored. Opening the viewer.";
+    showPage("viewer");
+  } catch (err) {
+    message.textContent = err.message;
+  } finally {
+    $("upload-btn").disabled = false;
+  }
+});
+
+// ---- My Documents ----
+
+async function loadDocuments() {
+  $("documents-message").hidden = true;
+  $("documents-message").textContent = "";
+  const docs = await api("/api/documents");
+  const body = $("documents-table").querySelector("tbody");
+  body.innerHTML = "";
+  $("documents-empty").hidden = docs.length > 0;
+  $("documents-table").hidden = docs.length === 0;
+  for (const doc of docs) {
+    const row = body.insertRow();
+    row.insertCell().textContent = doc.filename;
+    row.insertCell().textContent = doc.k + " of " + doc.n;
+    row.insertCell().textContent = doc.mode === "color" ? "color" : "black and white";
+    row.insertCell().textContent = doc.pages;
+    row.insertCell().textContent = doc.created_at.replace("T", " ").replace("+00:00", "");
+    const cell = row.insertCell();
+    const actions = document.createElement("div");
+    actions.className = "d-flex gap-2";
+    cell.appendChild(actions);
+    const openButton = document.createElement("button");
+    openButton.className = "btn btn-sm btn-outline-danger";
+    openButton.textContent = "Open";
+    openButton.addEventListener("click", () => { currentDoc = { id: doc.id }; currentPage = 1; showPage("viewer"); });
+    actions.appendChild(openButton);
+
+    const deleteButton = document.createElement("button");
+    deleteButton.className = "btn btn-sm btn-outline-secondary";
+    deleteButton.textContent = "Delete";
+    deleteButton.addEventListener("click", async () => {
+      if (!window.confirm("Delete \"" + doc.filename + "\" and its stored shares? This cannot be undone.")) return;
+      deleteButton.disabled = true;
+      try {
+        await api("/api/documents/" + doc.id, { method: "DELETE" });
+        if (currentDoc && currentDoc.id === doc.id) {
+          currentDoc = null;
+          $("viewer-empty").hidden = false;
+          $("viewer-body").hidden = true;
+        }
+        await loadDocuments();
+      } catch (err) {
+        $("documents-message").textContent = err.message;
+        $("documents-message").hidden = false;
+      } finally {
+        deleteButton.disabled = false;
+      }
+    });
+    actions.appendChild(deleteButton);
+  }
+}
+
+// ---- Viewer ----
+
+async function loadViewer(id) {
+  const doc = await api("/api/documents/" + id);
+  currentDoc = doc;
+  if (currentPage > doc.pages) currentPage = 1;
+  overlayShown = false;
+  $("viewer-empty").hidden = true;
+  $("viewer-body").hidden = false;
+  $("viewer-title").textContent = doc.filename;
+  $("viewer-scheme").textContent = doc.k + " of " + doc.n + " shares needed, " +
+    (doc.mode === "color" ? "color" : "black and white");
+  updatePageControls();
+  $("viewer-message").textContent = "";
+  $("share-preview").hidden = true;
+  const canvas = $("result");
+  canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
+
+  const body = $("share-table").querySelector("tbody");
+  body.innerHTML = "";
+  for (const share of doc.shares) {
+    const row = body.insertRow();
+    
+    const cellBox = row.insertCell();
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.className = "form-check-input";
+    box.value = share.index;
+    cellBox.appendChild(box);
+
+    row.insertCell().textContent = "Share " + share.index;
+    row.insertCell().textContent = share.node_label;
+    
+    const statusCell = row.insertCell();
+    statusCell.innerHTML = share.online ? '<span class="badge bg-success">online</span>' : '<span class="badge bg-danger">OFFLINE</span>';
+
+    const cellBtn = row.insertCell();
+    const link = document.createElement("button");
+    link.className = "btn btn-sm btn-outline-secondary";
+    link.textContent = "View raw";
+    link.addEventListener("click", () => previewShare(share));
+    cellBtn.appendChild(link);
+  }
+}
+
+function updatePageControls() {
+  $("page-label").textContent = "Page " + currentPage + " of " + currentDoc.pages;
+  $("prev-btn").disabled = currentPage <= 1;
+  $("next-btn").disabled = currentPage >= currentDoc.pages;
+}
+
+function shareUrl(index) {
+  return "/api/documents/" + currentDoc.id + "/pages/" + currentPage + "/shares/" + index;
+}
+
+function previewShare(share) {
+  $("share-preview-label").textContent = "Share " + share.index + " of page " + currentPage +
+    " on its own (top-left corner, actual pixels):";
+  $("share-preview-img").src = shareUrl(share.index) + "?t=" + Date.now();
+  $("share-preview").hidden = false;
+}
+
+function goToPage(page) {
+  currentPage = page;
+  updatePageControls();
+  $("share-preview").hidden = true;
+  if (overlayShown) overlay();   // keep showing the same shares on the new page
+}
+
+$("prev-btn").addEventListener("click", () => goToPage(currentPage - 1));
+$("next-btn").addEventListener("click", () => goToPage(currentPage + 1));
+
+async function loadShareImage(index) {
+  const response = await fetch(shareUrl(index));
+  if (!response.ok) {
+    const type = response.headers.get("content-type") || "";
+    const body = type.includes("json") ? await response.json() : null;
+    const reason = body && body.error ? body.error : "Request failed (" + response.status + ")";
+    throw new Error("Share " + index + " could not be fetched: " + reason);
+  }
+  return createImageBitmap(await response.blob());
+}
+
+$("overlay-btn").addEventListener("click", overlay);
+
+async function overlay() {
+  const doc = currentDoc;
+  const message = $("viewer-message");
+  const chosen = [...$("share-table").querySelectorAll("input:checked")].map(b => Number(b.value));
+  if (chosen.length === 0) { message.textContent = "Tick at least one share."; return; }
+
+  let images;
+  try {
+    images = await Promise.all(chosen.map(loadShareImage));
+  } catch (err) {
+    message.textContent = err.message;
+    return;
+  }
+
+  const full = document.createElement("canvas");
+  full.width = images[0].width;
+  full.height = images[0].height;
+  const fullCtx = full.getContext("2d");
+  fullCtx.fillStyle = "white";
+  fullCtx.fillRect(0, 0, full.width, full.height);
+  fullCtx.globalCompositeOperation = "multiply";
+  for (const img of images) fullCtx.drawImage(img, 0, 0);
+
+  const size = doc.page_sizes[currentPage - 1];
+  const enough = chosen.length >= doc.k;
+  const stacked = fullCtx.getImageData(0, 0, full.width, full.height).data;
+  const rgba = stackedToGray(stacked, full.width, size.width, size.height, doc.m, enough, doc.black_level, doc.white_level);
+
+  const out = $("result");
+  out.width = size.width;
+  out.height = size.height;
+  out.getContext("2d").putImageData(new ImageData(rgba, size.width, size.height), 0, 0);
+  overlayShown = true;
+
+  if (enough) {
+    message.textContent = chosen.length + " shares stacked (" + doc.k + " needed): page " + currentPage + " is readable.";
+  } else {
+    message.textContent = chosen.length + " share(s) stacked, " + doc.k + " needed: nothing can be read.";
+  }
+}
+
+// Each secret pixel was spread over m subpixels. Average exactly those m subpixels
+// back into one pixel, separately for red, green and blue. (Letting the browser resize
+// the image instead blends neighbouring pixels and adds visible noise.)
+// With enough shares the result is also rescaled: the stacked image is dim because
+// every pixel keeps some black subpixels, so the known dark and light levels
+// (black_level, white_level) are mapped to full black and white.
+function stackedToGray(data, fullWidth, width, height, m, rescale, blackLevel, whiteLevel) {
+  const rgba = new Uint8ClampedArray(width * height * 4);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const start = (y * fullWidth + x * m) * 4;
+      const o = (y * width + x) * 4;
+      for (let c = 0; c < 3; c++) {
+        let sum = 0;
+        for (let j = 0; j < m; j++) sum += data[start + j * 4 + c];
+        let lightness = sum / (m * 255);
+        if (rescale) lightness = (lightness - blackLevel) / (whiteLevel - blackLevel);
+        rgba[o + c] = Math.max(0, Math.min(1, lightness)) * 255;
+      }
+      rgba[o + 3] = 255;
+    }
+  }
+  return rgba;
+}
+
+// ---- Cloud Status ----
+
+async function loadNodes() {
+  const nodes = await api("/api/nodes");
+  const body = $("cloud-table").querySelector("tbody");
+  body.innerHTML = "";
+  for (const node of nodes) {
+    const row = body.insertRow();
+    row.insertCell().textContent = node.label;
+    
+    const statusCell = row.insertCell();
+    statusCell.innerHTML = node.online ? '<span class="badge bg-success">online</span>' : '<span class="badge bg-danger">OFFLINE</span>';
+
+    row.insertCell().textContent = node.share_count;
+    
+    const cellBtn = row.insertCell();
+    const button = document.createElement("button");
+    button.className = node.online ? "btn btn-sm btn-outline-danger" : "btn btn-sm btn-danger";
+    button.textContent = node.online ? "Simulate outage" : "Bring back online";
+    button.addEventListener("click", async () => {
+      await api("/api/nodes/" + node.node + "/toggle", { method: "POST" });
+      loadNodes();
+    });
+    cellBtn.appendChild(button);
+  }
+}
+
+showPage("upload");
+</script>
+</body>
+</html>
